@@ -10,6 +10,7 @@
 # Revision History  :
 # Date      Author   Rev    Revision
 # 5.2.22    mk       0      Initialversion
+# 25.2.22   mk       1      Some Improvements...
 # -------------------------------------------------------------------------------------------------------------------- #
 import math
 import sys
@@ -108,7 +109,7 @@ def main():
     # Konfiguration lesen
     cfg_file_name = sys.argv[1]
     cfg_file = configparser.ConfigParser(interpolation=None)
-    cfg_file.read(cfg_file_name)
+    cfg_file.read(cfg_file_name, encoding="utf-8")
     try:
         data_files = cfg_file["RawData"]["DataFiles"].split(",")
         data_files = [x.strip() for x in data_files]
@@ -133,8 +134,10 @@ def main():
     timeformat  = cfg_file["OutputFileStructure"]["TimestampFormat"]
     interval    = int(cfg_file["OutputFileStructure"]["Interval"])
     number_format = cfg_file["OutputFileStructure"]["NumberFormat"]
+    decimal_separator = cfg_file["OutputFileStructure"]["DecimalSeparator"]
 
-    with open(output_file, "w") as csvfile:
+    print("Exportiere...")
+    with open(output_file, "w", encoding="utf-8") as csvfile:
         datawriter = csv.writer(csvfile, dialect="excel", delimiter=delimiter)
 
         #Spaltenüberschriften schreiben
@@ -149,7 +152,7 @@ def main():
         print("Bis", datetime.fromtimestamp(last_timestamp).strftime(timeformat))
 
         for timestamp in range(first_timestamp, last_timestamp+1, interval): # last_timestamp+1 damit range den letzten Zeitstempel mit nimmt
-            datawriter.writerow([datetime.fromtimestamp(timestamp).strftime(timeformat)]+[ts.get_value_str(timestamp, number_format) for ts in ts_data])
+            datawriter.writerow([datetime.fromtimestamp(timestamp).strftime(timeformat)]+[ts.get_value_str(timestamp, number_format, decimal_separator) for ts in ts_data])
 
 if __name__ == "__main__":
     main()
