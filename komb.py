@@ -11,11 +11,13 @@
 # Date      Author   Rev    Revision
 # 5.2.22    mk       0      Initialversion
 # 25.2.22   mk       1      Some Improvements...
+# 29.9.22   mk       2      Weitere Verbesserungen, besonders eine enorme Geschwindigkeitserhöhung.
 # -------------------------------------------------------------------------------------------------------------------- #
 import math
 import sys
 import configparser
 import csv
+import cProfile
 from datetime import datetime
 from timeseries import TimeSeries
 
@@ -78,7 +80,7 @@ def load_timeseries(data_file, cfg_file):
 
     # TimeSeries Objekte mit Werten befüllen
     for row in rawdata[col_id_row+1:]:
-        dt = datetime.strptime(row[timestamp_col], timestamp_format)
+        dt = datetime.strptime(row[timestamp_col], timestamp_format).timestamp()
         #print(row)
 
         for i, col in enumerate(row[timestamp_col+1:]):
@@ -97,9 +99,16 @@ def print_stats(ts_data):
     for s in stat:
         print(format_string.format(*s))
 
+def print_progress(last, progress):
+    current = math.floor(progress*10)/10
+
+    if current > last:
+        print("\r" + str(int(current*100)) + "%", end="")
+
+    return current
 
 def main():
-    program_version = "22.2-dev_1"
+    program_version = "22.9-dev_2"
 
     # Programm Parameter prüfen
     if len(sys.argv) < 2:
@@ -137,7 +146,8 @@ def main():
     decimal_separator = cfg_file["OutputFileStructure"]["DecimalSeparator"]
 
     print("Exportiere...")
-    with open(output_file, "w", encoding="utf-8") as csvfile:
+    progress = -1
+    with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
         datawriter = csv.writer(csvfile, dialect="excel", delimiter=delimiter)
 
         #Spaltenüberschriften schreiben
@@ -152,8 +162,11 @@ def main():
         print("Bis", datetime.fromtimestamp(last_timestamp).strftime(timeformat))
 
         for timestamp in range(first_timestamp, last_timestamp+1, interval): # last_timestamp+1 damit range den letzten Zeitstempel mit nimmt
+            #print(datetime.fromtimestamp(timestamp).strftime(timeformat))
             datawriter.writerow([datetime.fromtimestamp(timestamp).strftime(timeformat)]+[ts.get_value_str(timestamp, number_format, decimal_separator) for ts in ts_data])
+            progress = print_progress(progress, (timestamp-first_timestamp)/(last_timestamp-first_timestamp))
 
 if __name__ == "__main__":
+    #cProfile.run('main()')
     main()
 
